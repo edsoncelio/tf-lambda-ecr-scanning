@@ -1,10 +1,38 @@
 resource "aws_lambda_function" "lambda_ecr" {
-    filename = "files/lambda_function_ecr.zip"
-    function_name "ecr_lambda"
-    role = aws_iam_role.lambda_role.arn
-    handler = "index.lambda_handler"
-    runtime = "python3.8"
-    timeout = 900
-    source_code_hash = filebase64sha256("files/lambda_function_ecr.zip")
+  filename         = "files/lambda_function_ecr.zip"
+  function_name    = "ecr_lambda"
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "index.lambda_handler"
+  runtime          = "python3.8"
+  timeout          = 900
+  source_code_hash = filebase64sha256("files/lambda_function_ecr.zip")
 
 }
+
+resource "aws_cloudwatch_event_rule" "cloudwatch_event_rule" {
+  name          = "CloudWatch_Event_Rule_To_Lambda"
+  description   = "cloudwatch event rule to be used with lambda ecr"
+  event_pattern = jsonencode(
+    {
+        "detail-type": "ECR Image Scan",
+        "detail": {
+            "scan-status": "COMPLETE" 
+        },
+        "source": "aws.ecr",
+    }
+  )
+}
+
+resource "aws_lambda_permission" "lambda_permission" {
+  statement_id  = "AllowExecutionFromCloudWatch"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda_ecr.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.cloudwatch_event_rule.arn
+
+  depends_on = [
+    aws_cloudwatch_event_rule.cloudwatch_event_rule,
+  ]
+}
+
+
