@@ -12,21 +12,7 @@ resource "aws_lambda_function" "lambda_ecr" {
 resource "aws_cloudwatch_event_rule" "cloudwatch_event_rule" {
   name          = "CloudWatch_Event_Rule_To_Lambda"
   description   = "cloudwatch event rule to be used with lambda ecr"
-  event_pattern = jsonencode(
-    {
-        "detail-type": [
-          "ECR Image Scan"
-          ],
-        "detail": {
-            "scan-status": [
-              "COMPLETE"
-              ], 
-        },
-        "source": [
-          "aws.ecr"
-        ],
-    }
-  )
+  event_pattern = jsonencode(local.event_pattern)
 }
 
 resource "aws_lambda_permission" "lambda_permission" {
@@ -43,6 +29,6 @@ resource "aws_lambda_permission" "lambda_permission" {
 
 resource "aws_cloudwatch_event_target" "cloudwatch_event_target" {
   rule = aws_cloudwatch_event_rule.cloudwatch_event_rule.name
-  arn = aws_lambda_function.lambda_ecr.arn
+  arn  = aws_lambda_function.lambda_ecr.arn
 }
 
