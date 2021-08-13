@@ -1,11 +1,11 @@
 resource "aws_lambda_function" "lambda_ecr" {
-  filename         = "files/lambda_function_ecr.zip"
+  filename         = "files/index.zip"
   function_name    = "ecr_lambda"
   role             = aws_iam_role.lambda_role.arn
   handler          = "index.lambda_handler"
   runtime          = "python3.8"
   timeout          = 900
-  source_code_hash = filebase64sha256("files/lambda_function_ecr.zip")
+  source_code_hash = filebase64sha256("files/index.zip")
 
 }
 
@@ -14,11 +14,17 @@ resource "aws_cloudwatch_event_rule" "cloudwatch_event_rule" {
   description   = "cloudwatch event rule to be used with lambda ecr"
   event_pattern = jsonencode(
     {
-        "detail-type": "ECR Image Scan",
+        "detail-type": [
+          "ECR Image Scan"
+          ],
         "detail": {
-            "scan-status": "COMPLETE" 
+            "scan-status": [
+              "COMPLETE"
+              ], 
         },
-        "source": "aws.ecr",
+        "source": [
+          "aws.ecr"
+        ],
     }
   )
 }
@@ -35,4 +41,8 @@ resource "aws_lambda_permission" "lambda_permission" {
   ]
 }
 
+resource "aws_cloudwatch_event_target" "cloudwatch_event_target" {
+  rule = aws_cloudwatch_event_rule.cloudwatch_event_rule.name
+  arn = aws_lambda_function.lambda_ecr.arn
+}
 
